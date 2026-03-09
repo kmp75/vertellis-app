@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Vertellis 🃏</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    :root {
+      --bg: #0a0a0a;
+      --text: #ffffff;
+      --text-muted: rgba(255,255,255,0.5);
+      --card-bg: rgba(255,255,255,0.08);
+      --card-border: rgba(255,255,255,0.12);
+      --radius: 24px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      touch-action: pan-y;
+    }
+
+    /* ── DECK SELECT SCREEN ── */
+    #deck-screen {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 48px 24px 32px;
+      gap: 16px;
+    }
+
+    .deck-header {
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .deck-header h1 {
+      font-size: 36px;
+      font-weight: 700;
+      letter-spacing: -1px;
+    }
+
+    .deck-header p {
+      color: var(--text-muted);
+      font-size: 15px;
+      margin-top: 6px;
+    }
+
+    .deck-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      flex: 1;
+      align-content: start;
+    }
+
+    .deck-card {
+      border-radius: 20px;
+      padding: 20px 16px;
+      cursor: pointer;
+      transition: transform 0.15s, opacity 0.15s;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 120px;
+      border: none;
+      text-align: left;
+      color: white;
+    }
+
+    .deck-card:active { transform: scale(0.96); opacity: 0.85; }
+
+    .deck-emoji { font-size: 32px; }
+    .deck-name { font-size: 16px; font-weight: 700; }
+    .deck-count { font-size: 12px; opacity: 0.75; }
+
+    .deck-familie { background: linear-gradient(135deg, #f97316, #ea580c); }
+    .deck-paare   { background: linear-gradient(135deg, #ec4899, #be185d); }
+    .deck-freunde { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+    .deck-teens   { background: linear-gradient(135deg, #a855f7, #7c3aed); }
+    .deck-party   { background: linear-gradient(135deg, #22c55e, #15803d); }
+    .deck-tief    { background: linear-gradient(135deg, #f59e0b, #b45309); }
+
+    /* ── GAME SCREEN ── */
+    #game-screen {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      height: 100vh;
+      height: 100dvh;
+    }
+
+    .game-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      flex-shrink: 0;
+    }
+
+    .btn-back {
+      background: rgba(255,255,255,0.1);
+      border: none;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-back:active { opacity: 0.7; }
+
+    .game-deck-name {
+      font-size: 15px;
+      font-weight: 600;
+      opacity: 0.9;
+    }
+
+    .btn-shuffle {
+      background: rgba(255,255,255,0.1);
+      border: none;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 20px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    .btn-shuffle:active { opacity: 0.7; }
+
+    /* Card area */
+    .card-area {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px 20px;
+      perspective: 1200px;
+      position: relative;
+    }
+
+    .card-wrapper {
+      width: 100%;
+      max-width: 400px;
+      aspect-ratio: 3/4;
+      max-height: 65vh;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .card-inner {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .card-inner.flipped {
+      transform: rotateY(180deg);
+    }
+
+    .card-face {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 28px;
+    }
+
+    .card-front {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(20px);
+    }
+
+    .card-front .card-content {
+      text-align: center;
+    }
+
+    .card-number {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 12px;
+      font-weight: 600;
+      opacity: 0.4;
+      letter-spacing: 1px;
+    }
+
+    .card-emoji {
+      font-size: 48px;
+      margin-bottom: 20px;
+      display: block;
+    }
+
+    .card-question {
+      font-size: clamp(18px, 4vw, 24px);
+      font-weight: 600;
+      line-height: 1.45;
+      letter-spacing: -0.3px;
+    }
+
+    .card-hint {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      opacity: 0.35;
+      white-space: nowrap;
+    }
+
+    .card-back {
+      transform: rotateY(180deg);
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      flex-direction: column;
+      gap: 16px;
+      text-align: center;
+    }
+
+    .card-back-title {
+      font-size: 14px;
+      font-weight: 600;
+      opacity: 0.5;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .card-back-prompt {
+      font-size: 20px;
+      font-weight: 600;
+      line-height: 1.4;
+      opacity: 0.85;
+    }
+
+    /* Navigation */
+    .card-nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      padding: 16px 20px 32px;
+      flex-shrink: 0;
+    }
+
+    .nav-btn {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: white;
+      font-size: 22px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+
+    .nav-btn:active { transform: scale(0.9); background: rgba(255,255,255,0.2); }
+    .nav-btn:disabled { opacity: 0.25; cursor: default; }
+    .nav-btn:disabled:active { transform: none; }
+
+    .nav-btn.next {
+      width: 72px;
+      height: 72px;
+      font-size: 26px;
+    }
+
+    /* Progress bar */
+    .progress-bar {
+      height: 2px;
+      background: rgba(255,255,255,0.1);
+      margin: 0 20px;
+      border-radius: 2px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: white;
+      border-radius: 2px;
+      transition: width 0.3s ease;
+      opacity: 0.5;
+    }
+
+    /* Slide animation */
+    @keyframes slideInRight {
+      from { transform: translateX(60px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideInLeft {
+      from { transform: translateX(-60px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    .card-wrapper.slide-right .card-inner { animation: slideInRight 0.3s ease; }
+    .card-wrapper.slide-left .card-inner { animation: slideInLeft 0.3s ease; }
+
+    /* Background gradient per deck */
+    .bg-familie { background: radial-gradient(ellipse at top, #7c2d0820 0%, transparent 70%); }
+    .bg-paare   { background: radial-gradient(ellipse at top, #9d174d20 0%, transparent 70%); }
+    .bg-freunde { background: radial-gradient(ellipse at top, #1e3a8a20 0%, transparent 70%); }
+    .bg-teens   { background: radial-gradient(ellipse at top, #4c1d9520 0%, transparent 70%); }
+    .bg-party   { background: radial-gradient(ellipse at top, #14532d20 0%, transparent 70%); }
+    .bg-tief    { background: radial-gradient(ellipse at top, #78350f20 0%, transparent 70%); }
+
+    .deck-accent-familie { color: #fb923c; }
+    .deck-accent-paare   { color: #f472b6; }
+    .deck-accent-freunde { color: #60a5fa; }
+    .deck-accent-teens   { color: #c084fc; }
+    .deck-accent-party   { color: #4ade80; }
+    .deck-accent-tief    { color: #fbbf24; }
+  </style>
+</head>
+<body>
+
+<!-- DECK SELECTION -->
+<div id="deck-screen">
+  <div class="deck-header">
+    <h1>🃏 Vertellis</h1>
+    <p>Wähle ein Deck und komm ins Gespräch</p>
+  </div>
+  <div class="deck-grid" id="deck-grid"></div>
+</div>
+
+<!-- GAME -->
+<div id="game-screen">
+  <div class="game-header">
+    <button class="btn-back" onclick="backToDecks()">← Decks</button>
+    <span class="game-deck-name" id="game-deck-name"></span>
+    <button class="btn-shuffle" onclick="shuffleCards()" title="Mischen">🔀</button>
+  </div>
+
+  <div class="progress-bar">
+    <div class="progress-fill" id="progress-fill"></div>
+  </div>
+
+  <div class="card-area">
+    <div class="card-wrapper" id="card-wrapper" onclick="flipCard()">
+      <div class="card-inner" id="card-inner">
+        <div class="card-face card-front">
+          <span class="card-number" id="card-number"></span>
+          <div class="card-content">
+            <span class="card-emoji" id="card-emoji"></span>
+            <p class="card-question" id="card-question"></p>
+          </div>
+          <span class="card-hint">Tippen zum Umdrehen</span>
+        </div>
+        <div class="card-face card-back">
+          <p class="card-back-title">Moment der Stille</p>
+          <p class="card-back-prompt" id="card-back-prompt"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-nav">
+    <button class="nav-btn" id="btn-prev" onclick="prevCard()">←</button>
+    <button class="nav-btn next" id="btn-next" onclick="nextCard()">→</button>
+  </div>
+</div>
+
+<script>
+const DECKS = [
+  {
+    id: 'familie',
+    name: 'Familie',
+    emoji: '🏠',
+    bg: 'bg-familie',
+    accent: 'deck-accent-familie',
+    color: 'deck-familie',
+    reflection: 'Teile diese Antwort mit jemandem, den du liebst.',
+    questions: [
+      { q: 'Welcher Moment mit der Familie hat dich am meisten geprägt?', e: '💛' },
+      { q: 'Was ist das Schönste, das du von deinen Eltern gelernt hast?', e: '🌱' },
+      { q: 'Welche Familientradition möchtest du für immer bewahren?', e: '🕯️' },
+      { q: 'Was würdest du deinem jüngeren Ich sagen?', e: '📬' },
+      { q: 'Wann hast du dich in deiner Familie zuletzt wirklich gesehen gefühlt?', e: '👁️' },
+      { q: 'Welches Familienmitglied hat dich überrascht — und warum?', e: '✨' },
+      { q: 'Was ist das größte Opfer, das jemand in deiner Familie je für dich gebracht hat?', e: '🙏' },
+      { q: 'Wenn deine Familie ein Film wäre, welches Genre wäre es?', e: '🎬' },
+      { q: 'Was möchtest du von deiner Familie in Erinnerung behalten?', e: '📸' },
+      { q: 'Wofür bist du deiner Familie dankbar, was du nie ausgesprochen hast?', e: '💬' },
+      { q: 'Was ist das Stärkste, was deine Familie zusammenhält?', e: '🔗' },
+      { q: 'Welches Familienmitglied versteht dich am besten — und warum?', e: '🫶' },
+      { q: 'Was hättest du gerne mehr Zeit mit einem Familienmitglied getan?', e: '⏳' },
+      { q: 'Was macht unsere Familie besonders — auch wenn wir's selten sagen?', e: '⭐' },
+      { q: 'Welchen Fehler deiner Eltern hast du inzwischen verstanden?', e: '🧩' },
+      { q: 'Was ist das Lustigste, das je bei uns passiert ist?', e: '😂' },
+      { q: 'Wenn du deiner Familie einen Brief schreiben würdest, was wäre der erste Satz?', e: '✉️' },
+      { q: 'Welche Eigenschaft hast du von wem in der Familie geerbt?', e: '🧬' },
+      { q: 'Was lernst du gerade von einem Familienmitglied?', e: '📚' },
+      { q: 'Was ist dein schönstes Familienerinnerungsstück?', e: '🏺' },
+    ]
+  },
+  {
+    id: 'paare',
+    name: 'Paare',
+    emoji: '❤️',
+    bg: 'bg-paare',
+    accent: 'deck-accent-paare',
+    color: 'deck-paare',
+    reflection: 'Sag deinem Partner, was du gerade fühlst.',
+    questions: [
+      { q: 'In welchem Moment hast du gemerkt, dass du dich verliebt hast?', e: '💘' },
+      { q: 'Was machst du, wenn du allein Zeit hast — und schämst dich dafür?', e: '😅' },
+      { q: 'Was schätzt du am meisten an unserem Alltag zusammen?', e: '☀️' },
+      { q: 'Worüber reden wir nie, obwohl wir's sollten?', e: '🤫' },
+      { q: 'Was hat sich in dir verändert, seit wir zusammen sind?', e: '🦋' },
+      { q: 'Was ist dein größter Traum, den du mir noch nicht erzählt hast?', e: '🌙' },
+      { q: 'Wann hast du dich zuletzt wirklich von mir gesehen gefühlt?', e: '💞' },
+      { q: 'Was bedeutet für dich Heimat — in einem Menschen?', e: '🏡' },
+      { q: 'Was liebst du an uns als Paar am meisten?', e: '🫂' },
+      { q: 'Welche Version von mir liebst du am meisten?', e: '🪞' },
+      { q: 'Was ist das Mutigste, was ich je für dich getan habe?', e: '🦁' },
+      { q: 'Was würdest du gerne öfter zusammen tun?', e: '🎯' },
+      { q: 'Wann hast du mich zuletzt überrascht — auf gute Art?', e: '🎁' },
+      { q: 'Was ist das Schwierigste an uns — und warum bleibst du trotzdem?', e: '⚓' },
+      { q: 'Wenn du einen Tag alles neu gestalten könntest, wie würde er aussehen?', e: '🌅' },
+      { q: 'Was sagst du mir nie laut, aber zeigst es mir auf andere Weise?', e: '🌸' },
+      { q: 'Was ist deine Lieblingsversion von uns?', e: '📷' },
+      { q: 'Worüber denkst du nach, bevor du einschläfst?', e: '🌌' },
+      { q: 'Was hoffst du, dass wir in 10 Jahren noch gemeinsam haben?', e: '🔭' },
+      { q: 'Was wärst du, wenn du kein Mensch wärst — und warum?', e: '✨' },
+    ]
+  },
+  {
+    id: 'freunde',
+    name: 'Freunde',
+    emoji: '👥',
+    bg: 'bg-freunde',
+    accent: 'deck-accent-freunde',
+    color: 'deck-freunde',
+    reflection: 'Sag dem anderen, was du an ihm schätzt.',
+    questions: [
+      { q: 'Was war der erste Eindruck von mir — und wie war's wirklich?', e: '👀' },
+      { q: 'Welcher Moment in unserer Freundschaft hat dich am meisten überrascht?', e: '💥' },
+      { q: 'Was würdest du nie zugeben, aber jetzt vielleicht doch?', e: '🤐' },
+      { q: 'Welche Eigenschaft von mir nervt dich — aber du magst es trotzdem?', e: '😂' },
+      { q: 'Was machst du, wenn du wirklich allein bist?', e: '🏝️' },
+      { q: 'Wonach sehnst du dich gerade?', e: '💭' },
+      { q: 'Was ist dein größtes Geheimnis — das du jetzt vielleicht teilen kannst?', e: '🔐' },
+      { q: 'Wann hast du dich zuletzt komplett falsch verstanden gefühlt?', e: '😶' },
+      { q: 'Was ist das Verrückteste, das du je alleine gemacht hast?', e: '🎢' },
+      { q: 'Wofür würdest du dein Leben stehen lassen?', e: '🔥' },
+      { q: 'Was denkst du gerade, was du nie sagen würdest?', e: '💬' },
+      { q: 'Welchen Menschen in deinem Leben vermisst du am meisten?', e: '🫧' },
+      { q: 'Was ist dein lautester Gedanke, den du leise hältst?', e: '🔇' },
+      { q: 'Wann hast du zuletzt etwas getan, das dich wirklich stolz gemacht hat?', e: '🏆' },
+      { q: 'Was ist das Tapferste, was du je getan hast?', e: '🦸' },
+      { q: 'Was würdest du tun, wenn du eine Woche unsichtbar wärst?', e: '👻' },
+      { q: 'Welche drei Worte beschreiben dich am ehrlichsten?', e: '🪄' },
+      { q: 'Was bereust du nicht — obwohl andere das vielleicht tun würden?', e: '😏' },
+      { q: 'Wovor hast du heimlich Angst?', e: '🌑' },
+      { q: 'Was ist das Beste, was jemand je für dich getan hat?', e: '💎' },
+    ]
+  },
+  {
+    id: 'teens',
+    name: 'Teens',
+    emoji: '🧒',
+    bg: 'bg-teens',
+    accent: 'deck-accent-teens',
+    color: 'deck-teens',
+    reflection: 'Kein Druck — denk kurz nach und teile, was sich richtig anfühlt.',
+    questions: [
+      { q: 'Was ist dein größtes Ziel für dieses Jahr?', e: '🎯' },
+      { q: 'Welche Person inspiriert dich am meisten — und warum?', e: '🌟' },
+      { q: 'Wann hast du dich zuletzt wirklich mutig gefühlt?', e: '🦁' },
+      { q: 'Was würdest du sofort ändern, wenn du könntest?', e: '⚡' },
+      { q: 'Was lernst du gerade über dich selbst?', e: '🪞' },
+      { q: 'Was bringt dich zum Lachen, egal in welcher Stimmung du bist?', e: '😂' },
+      { q: 'Welche App würdest du erfinden, wenn du könntest?', e: '📱' },
+      { q: 'Was machst du, wenn du eine schlechte Laune hast?', e: '😤' },
+      { q: 'Was ist das Coolste, was du in letzter Zeit gelernt hast?', e: '🔥' },
+      { q: 'Worüber würdest du stundenlang reden können?', e: '🗣️' },
+      { q: 'Was ist dein guilty pleasure?', e: '🍕' },
+      { q: 'Welchen Ratschlag würdest du deinem 10-jährigen Ich geben?', e: '📨' },
+      { q: 'Was war dein peinlichster Moment — der jetzt lustig ist?', e: '😳' },
+      { q: 'Was möchtest du in 5 Jahren gemacht haben?', e: '🚀' },
+      { q: 'Was ist etwas, das dich nervt, aber du trotzdem magst?', e: '😅' },
+      { q: 'Welches Talent hättest du gerne?', e: '🎸' },
+      { q: 'Was würdest du tun, wenn du für einen Tag berühmt wärst?', e: '🎤' },
+      { q: 'Was ist für dich echte Freundschaft?', e: '🫶' },
+      { q: 'Welche Entscheidung hat dich bisher am meisten verändert?', e: '🌀' },
+      { q: 'Was ist das Bedeutungsvollste, das dir jemand je gesagt hat?', e: '💬' },
+    ]
+  },
+  {
+    id: 'party',
+    name: 'Party',
+    emoji: '🎉',
+    bg: 'bg-party',
+    accent: 'deck-accent-party',
+    color: 'deck-party',
+    reflection: 'Prost — und ehrlich bleiben! 🥂',
+    questions: [
+      { q: 'Was ist das Unglaublichste, das du je erlebt hast?', e: '🤯' },
+      { q: 'Was würdest du tun, wenn du für 24h niemanden kennst?', e: '🃏' },
+      { q: 'Welche Lüge hast du mal erzählt und sie ist nie aufgeflogen?', e: '😈' },
+      { q: 'Was ist dein bisher schlimmster erster Date-Fail?', e: '💀' },
+      { q: 'Was würdest du für 100.000€ niemals tun?', e: '💰' },
+      { q: 'Wer im Raum wäre der schlimmste Überlebende auf einer einsamen Insel?', e: '🏝️' },
+      { q: 'Was ist dein größter Eskalations-Moment?', e: '🚀' },
+      { q: 'Womit kannst du jeden sofort zum Lachen bringen?', e: '😂' },
+      { q: 'Was ist das Absurdeste, das du aus Trotz getan hast?', e: '🤡' },
+      { q: 'Was ist deine peinlichste Phase, aus der du nie herausgekommen bist?', e: '🫣' },
+      { q: 'Welche Fähigkeit hast du, von der niemand hier weiß?', e: '🎪' },
+      { q: 'Was ist die wildeste Ausrede, die du je benutzt hast?', e: '🎭' },
+      { q: 'Wen im Raum würdest du mit einer Zeitmaschine in die Vergangenheit schicken?', e: '⏰' },
+      { q: 'Was ist das Mutigste, das du nach Mitternacht getan hast?', e: '🌙' },
+      { q: 'Welche Person hier würde am längsten überleben, wenn alle Regeln wegfallen?', e: '🔥' },
+      { q: 'Was ist das Geheimste an dir, das jetzt kein Geheimnis mehr ist?', e: '💣' },
+      { q: 'Womit hättest du als Kind garantiert gewettet?', e: '🤝' },
+      { q: 'Was war dein fiesestes Gerechtigkeits-Moment gegen jemanden?', e: '⚖️' },
+      { q: 'Was ist das Freiheitlichste, das du je spontan getan hast?', e: '🦅' },
+      { q: 'Wen im Raum würdest du für einen Film casten — als Bösewicht?', e: '🎬' },
+    ]
+  },
+  {
+    id: 'tief',
+    name: 'Tief',
+    emoji: '🌊',
+    bg: 'bg-tief',
+    accent: 'deck-accent-tief',
+    color: 'deck-tief',
+    reflection: 'Lass die Antwort sacken. Du musst nichts erklären.',
+    questions: [
+      { q: 'Welcher Moment in deinem Leben hat dich am meisten verändert?', e: '🌋' },
+      { q: 'Was würdest du tun, wenn du wüsstest, dass du nicht scheitern kannst?', e: '🔑' },
+      { q: 'Wann hast du dich zuletzt richtig lebendig gefühlt?', e: '⚡' },
+      { q: 'Was ist deine größte unausgesprochene Sehnsucht?', e: '🌊' },
+      { q: 'Welche Version von dir wird nie jemand sehen?', e: '🪐' },
+      { q: 'Was willst du noch erleben, bevor du stirbst?', e: '🌅' },
+      { q: 'Wofür schämst du dich — obwohl du weißt, dass du es nicht solltest?', e: '🌑' },
+      { q: 'Was ist die eine Frage, die du dir nie ehrlich beantwortet hast?', e: '❓' },
+      { q: 'In welchem Bereich bist du dich selbst gegenüber unehrlich?', e: '🪞' },
+      { q: 'Was wäre, wenn du wirklich nichts zu verlieren hättest?', e: '🔥' },
+      { q: 'Welche Wunde in dir ist noch nicht geheilt?', e: '💔' },
+      { q: 'Was bedeutet Freiheit für dich — wirklich?', e: '🦅' },
+      { q: 'Wem schuldest du eine Entschuldigung, die du noch nicht gegeben hast?', e: '🕊️' },
+      { q: 'Was hältst du für wahr, das die meisten nicht glauben?', e: '🔭' },
+      { q: 'Was wäre die mutigste Version von dir?', e: '🦁' },
+      { q: 'Was gibst du auf, um dazuzugehören?', e: '🎭' },
+      { q: 'Wann hast du zuletzt jemandem wirklich vertraut?', e: '🤝' },
+      { q: 'Was ist das Erste, wofür du dich am Ende deines Lebens entschuldigen würdest?', e: '⌛' },
+      { q: 'Was liebst du an dir — ohne Einschränkung?', e: '💛' },
+      { q: 'Wenn dein Leben ein Kapitel endet und ein neues beginnt — was muss anders werden?', e: '📖' },
+    ]
+  }
+];
+
+let currentDeck = null;
+let currentCards = [];
+let currentIndex = 0;
+let isFlipped = false;
+
+// Touch handling
+let touchStartX = 0;
+let touchStartY = 0;
+
+function init() {
+  const grid = document.getElementById('deck-grid');
+  DECKS.forEach(deck => {
+    const btn = document.createElement('button');
+    btn.className = `deck-card ${deck.color}`;
+    btn.innerHTML = `
+      <span class="deck-emoji">${deck.emoji}</span>
+      <span class="deck-name">${deck.name}</span>
+      <span class="deck-count">${deck.questions.length} Karten</span>
+    `;
+    btn.onclick = () => startDeck(deck);
+    grid.appendChild(btn);
+  });
+}
+
+function startDeck(deck) {
+  currentDeck = deck;
+  currentCards = [...deck.questions];
+  currentIndex = 0;
+  isFlipped = false;
+
+  document.getElementById('deck-screen').style.display = 'none';
+  const gameScreen = document.getElementById('game-screen');
+  gameScreen.style.display = 'flex';
+  gameScreen.className = deck.bg;
+  Object.assign(gameScreen.style, { flex: '1', flexDirection: 'column', height: '100vh' });
+
+  document.getElementById('game-deck-name').innerHTML = `<span class="${deck.accent}">${deck.emoji} ${deck.name}</span>`;
+
+  setupTouchHandlers();
+  renderCard('right');
+}
+
+function renderCard(direction) {
+  const wrapper = document.getElementById('card-wrapper');
+  const inner = document.getElementById('card-inner');
+
+  isFlipped = false;
+  inner.classList.remove('flipped');
+
+  const card = currentCards[currentIndex];
+  document.getElementById('card-emoji').textContent = card.e;
+  document.getElementById('card-question').textContent = card.q;
+  document.getElementById('card-back-prompt').textContent = currentDeck.reflection;
+  document.getElementById('card-number').textContent = `${currentIndex + 1} / ${currentCards.length}`;
+
+  const pct = ((currentIndex + 1) / currentCards.length * 100).toFixed(1);
+  document.getElementById('progress-fill').style.width = pct + '%';
+
+  document.getElementById('btn-prev').disabled = currentIndex === 0;
+  document.getElementById('btn-next').disabled = currentIndex === currentCards.length - 1;
+
+  wrapper.classList.remove('slide-right', 'slide-left');
+  void wrapper.offsetWidth;
+  wrapper.classList.add(direction === 'right' ? 'slide-right' : 'slide-left');
+}
+
+function flipCard() {
+  const inner = document.getElementById('card-inner');
+  isFlipped = !isFlipped;
+  inner.classList.toggle('flipped', isFlipped);
+}
+
+function nextCard() {
+  if (currentIndex < currentCards.length - 1) {
+    currentIndex++;
+    renderCard('right');
+  }
+}
+
+function prevCard() {
+  if (currentIndex > 0) {
+    currentIndex--;
+    renderCard('left');
+  }
+}
+
+function shuffleCards() {
+  for (let i = currentCards.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [currentCards[i], currentCards[j]] = [currentCards[j], currentCards[i]];
+  }
+  currentIndex = 0;
+  renderCard('right');
+}
+
+function backToDecks() {
+  document.getElementById('game-screen').style.display = 'none';
+  document.getElementById('deck-screen').style.display = 'flex';
+}
+
+function setupTouchHandlers() {
+  const area = document.getElementById('card-area');
+  area.addEventListener('touchstart', e => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  }, { passive: true });
+
+  area.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+      if (dx < 0) nextCard();
+      else prevCard();
+    }
+  }, { passive: true });
+}
+
+init();
+</script>
+</body>
+</html>
