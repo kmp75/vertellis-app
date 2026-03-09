@@ -25,7 +25,7 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      touch-action: pan-y;
+      touch-action: manipulation;
     }
 
     /* ── DECK SELECT SCREEN ── */
@@ -359,7 +359,7 @@
   </div>
 
   <div class="card-area">
-    <div class="card-wrapper" id="card-wrapper" onclick="flipCard()">
+    <div class="card-wrapper" id="card-wrapper" onclick="flipCard()" ontouchend="handleCardTouch(event)">
       <div class="card-inner" id="card-inner">
         <div class="card-face card-front">
           <span class="card-number" id="card-number"></span>
@@ -378,8 +378,8 @@
   </div>
 
   <div class="card-nav">
-    <button class="nav-btn" id="btn-prev" onclick="prevCard()">←</button>
-    <button class="nav-btn next" id="btn-next" onclick="nextCard()">→</button>
+    <button class="nav-btn" id="btn-prev" onclick="prevCard()" ontouchend="e=>{event.preventDefault();prevCard()}">←</button>
+    <button class="nav-btn next" id="btn-next" onclick="nextCard()" ontouchend="e=>{event.preventDefault();nextCard()}">→</button>
   </div>
 </div>
 
@@ -592,7 +592,8 @@ function init() {
       <span class="deck-name">${deck.name}</span>
       <span class="deck-count">${deck.questions.length} Karten</span>
     `;
-    btn.onclick = () => startDeck(deck);
+    btn.addEventListener('click', () => startDeck(deck));
+    btn.addEventListener('touchend', (e) => { e.preventDefault(); startDeck(deck); });
     grid.appendChild(btn);
   });
 }
@@ -637,6 +638,11 @@ function renderCard(direction) {
   wrapper.classList.remove('slide-right', 'slide-left');
   void wrapper.offsetWidth;
   wrapper.classList.add(direction === 'right' ? 'slide-right' : 'slide-left');
+}
+
+function handleCardTouch(e) {
+  e.preventDefault();
+  flipCard();
 }
 
 function flipCard() {
